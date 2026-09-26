@@ -3,14 +3,14 @@ const { videoToWebp, imageToWebp } = require('../lib/video-utils');
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
 
 module.exports = {
-  pattern: "sticker",
-  desc: "Convert image/video to sticker",
+  pattern: "stickerwm",
+  desc: "Convert media to sticker with custom pack & author",
   category: "sticker",
   react: "🔄",
   filename: __filename,
-  use: "<reply to media>",
+  use: "<reply to media> [pack|author]",
 
-  execute: async (conn, message, m, { from, reply }) => {
+  execute: async (conn, message, m, { from, q, reply }) => {
     const sendText = async (text) => conn.sendMessage(from, { text }, { quoted: message });
 
     try {
@@ -30,18 +30,21 @@ module.exports = {
 
       const webpBuffer = mediaType === "image" ? await imageToWebp(buffer) : await videoToWebp(buffer);
 
+      const [pack, author] = q ? q.split("|").map(x => x.trim()) : ["", "MASKY - MD"];
+
       const sticker = new Sticker(webpBuffer, {
-        pack: "",
-        author: "MASKY - MD",
+        pack: pack || "",
+        author: author || "MASKY - MD",
         type: StickerTypes.FULL,
         quality: 75,
         background: "transparent",
       });
+
       const out = await sticker.toBuffer();
       await conn.sendMessage(from, { sticker: out }, { quoted: message });
 
     } catch (err) {
-      console.error("Sticker command error:", err);
+      console.error("StickerWM command error:", err);
       sendText("⚠️ Failed to create sticker.");
     }
   }
